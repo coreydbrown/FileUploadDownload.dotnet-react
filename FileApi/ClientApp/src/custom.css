@@ -1,0 +1,36 @@
+/* Provide sufficient contrast against white background */
+a {
+  color: #0366d6;
+}
+
+code {
+  color: #E01A76;
+}
+
+.btn-primary {
+  color: #fff;
+  background-color: #1b6ec2;
+  border-color: #1861ac;
+}
+
+html {
+    font-family: "calibri"
+}
+
+.container {
+    margin: 3rem;
+    text-align: center;
+}
+
+span {
+    color: blue;
+}
+
+h1 {
+    margin-bottom: 2rem;
+}
+
+button {
+    border-color: green;
+    padding: 0.3rem;
+}
