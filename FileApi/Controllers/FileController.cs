@@ -1,4 +1,4 @@
-﻿using FileApi.DB;
+﻿using FileApi.Data;
 using FileApi.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,7 +18,7 @@ namespace FileApi.Controllers
         // upload file
         [HttpPost]
         [Route("upload")]
-        public async Task<IActionResult> UploadFile([FromForm]IFormFile file)
+        public async Task<IActionResult> UploadFile([FromForm] IFormFile file)
         {
             var fileModel = new FileModel();
             fileModel.Name = file.FileName;
