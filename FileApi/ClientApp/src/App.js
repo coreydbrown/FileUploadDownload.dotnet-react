@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import axios from 'axios';
 import './custom.css';
+import ClipLoader from "react-spinners/ClipLoader";
 
 const App = () => {
     const [file, setFile] = useState(null);
     const [recentlyAddedFile, setRecentlyAddedFile] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [completedUpload, setCompletedUpload] = useState(false);
+    const [completedDownload, setCompletedDownload] = useState(false);
 
     const onFileChange = e => {
         setFile(e.target.files[0]);
@@ -14,18 +18,26 @@ const App = () => {
         const formData = new FormData();
         formData.append('file', file);
 
-        const result = await axios.post("api/file/upload", formData);
+        setCompletedDownload(false);
+        setLoading(true);
+        const result = await axios.post("api/File/upload", formData);
+        setLoading(false);
         const id = result.data.id;
         const name = result.data.name;
         setRecentlyAddedFile({ id, name });
+        setCompletedUpload(true);
     }
 
     const onFileDownload = async () => {
+        setCompletedUpload(false);
+        setLoading(true);
         const response = await axios({
-            url: `api/file/download/${recentlyAddedFile.id}`,
+            url: `api/File/download/${recentlyAddedFile.id}`,
             method: 'GET',
             responseType: 'blob'
         });
+        setLoading(false);
+        setCompletedDownload(true);
 
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
@@ -46,10 +58,24 @@ const App = () => {
             <input type="file" onChange={onFileChange} />
             <button onClick={onFileUpload}>Upload</button>
 
-            {recentlyAddedFile &&
+            <div style={{ margin: "1rem" }}>
+                <ClipLoader
+                    loading={loading}
+                    color="blue"
+                    size={75}
+                />
+            </div>
+
+            {(completedUpload && !loading) &&
                 <div>
                     <p><span>{recentlyAddedFile.name}</span> has been successfully uploaded</p>
                     <button onClick={onFileDownload}>Download {recentlyAddedFile.name}</button>
+                </div>
+            }
+
+            {(completedDownload && !loading) &&
+                <div>
+                    <p><span>{recentlyAddedFile.name}</span> has been successfully downloaded</p>
                 </div>
             }
         </div>
