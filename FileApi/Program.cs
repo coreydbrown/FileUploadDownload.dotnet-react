@@ -3,6 +3,12 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Overwrite Kestrel max request body size to be unlimited.
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.MaxRequestBodySize = null;
+});
+
 // Add services to the container.
 
 var connectionString = builder.Configuration.GetConnectionString("FileApiDbConnectionString");

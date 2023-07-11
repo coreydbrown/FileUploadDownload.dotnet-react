@@ -1,1 +1,1 @@
-﻿Scaffold-DbContext 'Name=ConnectionStrings:FileApiDbConnectionString' Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models -ContextDir Data -Context "FileApiDbContext"
+﻿Scaffold-DbContext 'Name=ConnectionStrings:FileApiDbConnectionString' Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models -ContextDir Data -Context "FileApiDbContext" -Force

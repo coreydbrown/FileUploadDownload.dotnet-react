@@ -1,7 +1,10 @@
 ﻿CREATE TABLE Files
 (
     Id INT IDENTITY PRIMARY KEY,
-    Name NVARCHAR(255),
+    Content VARBINARY(MAX),
+    UntrustedName NVARCHAR(255),
     ContentType NVARCHAR(255),
-    Data VARBINARY(MAX)
+    Note NVARCHAR(MAX),
+    Size BIGINT,
+    UploadDT DATETIME,
 );
