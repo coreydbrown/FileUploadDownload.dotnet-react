@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Globalization;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace FileApi.Controllers
 {
@@ -16,6 +19,7 @@ namespace FileApi.Controllers
     [ApiController]
     public class FileController : ControllerBase
     {
+        private readonly string _connectionString;
         private readonly FileApiDbContext _context;
         private readonly long _fileSizeLimit;
         private readonly string[] _prohibitedExtensions = { ".exe" };
@@ -23,6 +27,7 @@ namespace FileApi.Controllers
 
         public FileController(FileApiDbContext context, IConfiguration config)
         {
+            _connectionString = config.GetConnectionString("FileApiDbConnectionString");
             _context = context;
             _fileSizeLimit = config.GetValue<long>("FileSizeLimit");
         }
@@ -170,14 +175,45 @@ namespace FileApi.Controllers
         [Route("download/{id}")]
         public async Task<IActionResult> DownloadFile(int id)
         {
-            var file = await _context.Files.FindAsync(id);
+            string fileName;
+            string contentType;
+            Stream stream;
 
-            if (file == null)
+            string query = "SELECT UntrustedName, ContentType, Content FROM Files WHERE Id = @id";
+
+            try
             {
-                return NotFound($"File with ID:{id} could not be located");
+                SqlConnection connection = new SqlConnection(_connectionString);
+                Response.RegisterForDispose(connection);
+
+                await connection.OpenAsync();
+
+                SqlCommand command = new SqlCommand(query, connection);
+                Response.RegisterForDispose(command);
+
+                command.Parameters.AddWithValue("@id", id);
+
+                // The reader needs to be executed with the SequentialAccess behavior to enable network streaming
+                SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
+                Response.RegisterForDispose(reader);
+
+                if (!await reader.ReadAsync())
+                {
+                    return NotFound($"File with ID: {id} could not be located");
+                }
+
+                fileName = reader.GetString(0);
+                contentType = reader.GetString(1);
+                stream = reader.GetStream(2);
+            }
+            catch (Exception ex)
+            {
+                // Implement logging
+                System.Diagnostics.Debug.WriteLine(ex);
+                return StatusCode(500, "An error occured. Please try again later");
             }
 
-            return File(file.Content, file.ContentType, file.UntrustedName);
+            return File(stream, contentType, fileName);
         }
     }
 }
