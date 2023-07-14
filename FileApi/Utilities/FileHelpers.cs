@@ -47,6 +47,7 @@ namespace FileApi.Utilities
             }
             catch (Exception ex)
             {
+                // Implement logging
                 modelState.AddModelError("File",
                     $"The upload failed. Error: {ex.HResult}");
             }
@@ -54,7 +55,7 @@ namespace FileApi.Utilities
             return Array.Empty<byte>();
         }
 
-        private static bool IsValidFileExtension(string fileName, Stream data, string[] permittedExtensions)
+        private static bool IsValidFileExtension(string fileName, Stream data, string[] prohibitedExtensions)
         {
             if (string.IsNullOrEmpty(fileName) || data == null || data.Length == 0)
             {
@@ -63,7 +64,7 @@ namespace FileApi.Utilities
 
             var ext = Path.GetExtension(fileName).ToLowerInvariant();
 
-            if (string.IsNullOrEmpty(ext) || permittedExtensions.Contains(ext))
+            if (string.IsNullOrEmpty(ext) || prohibitedExtensions.Contains(ext))
             {
                 return false;
             }

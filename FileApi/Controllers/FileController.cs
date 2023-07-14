@@ -19,7 +19,6 @@ namespace FileApi.Controllers
     [ApiController]
     public class FileController : ControllerBase
     {
-        private readonly string _connectionString;
         private readonly FileApiDbContext _context;
         private readonly long _fileSizeLimit;
         private readonly string[] _prohibitedExtensions = { ".exe" };
@@ -27,7 +26,6 @@ namespace FileApi.Controllers
 
         public FileController(FileApiDbContext context, IConfiguration config)
         {
-            _connectionString = config.GetConnectionString("FileApiDbConnectionString");
             _context = context;
             _fileSizeLimit = config.GetValue<long>("FileSizeLimit");
         }
@@ -183,18 +181,15 @@ namespace FileApi.Controllers
 
             try
             {
-                SqlConnection connection = new SqlConnection(_connectionString);
-                Response.RegisterForDispose(connection);
-
+                var connection = _context.Database.GetDbConnection();
                 await connection.OpenAsync();
 
-                SqlCommand command = new SqlCommand(query, connection);
-                Response.RegisterForDispose(command);
-
-                command.Parameters.AddWithValue("@id", id);
+                using var command = connection.CreateCommand();
+                command.CommandText = query;
+                command.Parameters.Add(new SqlParameter("@id", id));
 
                 // The reader needs to be executed with the SequentialAccess behavior to enable network streaming
-                SqlDataReader reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
+                var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
                 Response.RegisterForDispose(reader);
 
                 if (!await reader.ReadAsync())
