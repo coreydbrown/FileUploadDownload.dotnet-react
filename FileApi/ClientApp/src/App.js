@@ -23,8 +23,8 @@ const App = () => {
         const result = await axios.post("api/File/upload", formData);
         setLoading(false);
         const id = result.data.id;
-        const name = result.data.name;
-        setRecentlyAddedFile({ id, name });
+        const filename = result.data.filename;
+        setRecentlyAddedFile({ id, filename });
         setCompletedUpload(true);
     }
 
@@ -68,7 +68,7 @@ const App = () => {
 
             {(completedUpload && !loading) &&
                 <div>
-                    <p><span>{recentlyAddedFile.name}</span> has been successfully uploaded</p>
+                    <p><span>{recentlyAddedFile.filename}</span> has been successfully uploaded</p>
                     <button onClick={onFileDownload}>Download {recentlyAddedFile.name}</button>
                 </div>
             }

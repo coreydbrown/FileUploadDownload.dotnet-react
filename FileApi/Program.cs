@@ -1,4 +1,5 @@
 using FileApi.Data;
+using FileApi.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +17,8 @@ builder.Services.AddDbContext<FileApiDbContext>(options =>
 {
     options.UseSqlServer(connectionString);
 });
+
+builder.Services.AddScoped<IFileRepository, FileRepository>();
 
 builder.Services.AddControllers();
 

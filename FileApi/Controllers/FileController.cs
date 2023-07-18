@@ -1,5 +1,4 @@
-﻿using FileApi.Data;
-using FileApi.Models;
+﻿using FileApi.Models;
 using FileApi.Filters;
 using FileApi.Utilities;
 using System.Net;
@@ -9,9 +8,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Globalization;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
-using System.Data;
+using FileApi.Services;
 
 namespace FileApi.Controllers
 {
@@ -19,14 +16,14 @@ namespace FileApi.Controllers
     [ApiController]
     public class FileController : ControllerBase
     {
-        private readonly FileApiDbContext _context;
+        private readonly IFileRepository _fileRepository;
         private readonly long _fileSizeLimit;
         private readonly string[] _prohibitedExtensions = { ".exe" };
         private static readonly FormOptions _defaultFormOptions = new FormOptions();
 
-        public FileController(FileApiDbContext context, IConfiguration config)
+        public FileController(IFileRepository fileRepository, IConfiguration config)
         {
-            _context = context;
+            _fileRepository = fileRepository;
             _fileSizeLimit = config.GetValue<long>("FileSizeLimit");
         }
 
@@ -163,43 +160,10 @@ namespace FileApi.Controllers
                 UploadDt = DateTime.UtcNow
             };
 
-            _context.Files.Add(file);
-            await _context.SaveChangesAsync();
-
-            return Created($"api/File/download/{file.Id}", new { id = file.Id, filename = trustedFileNameForDisplay });
-        }
-
-        [HttpGet]
-        [Route("download/{id}")]
-        public async Task<IActionResult> DownloadFile(int id)
-        {
-            string fileName;
-            string contentType;
-            Stream stream;
-
-            string query = "SELECT UntrustedName, ContentType, Content FROM Files WHERE Id = @id";
-
             try
             {
-                var connection = _context.Database.GetDbConnection();
-                await connection.OpenAsync();
-
-                using var command = connection.CreateCommand();
-                command.CommandText = query;
-                command.Parameters.Add(new SqlParameter("@id", id));
-
-                // The reader needs to be executed with the SequentialAccess behavior to enable network streaming
-                var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess);
-                Response.RegisterForDispose(reader);
-
-                if (!await reader.ReadAsync())
-                {
-                    return NotFound($"File with ID: {id} could not be located");
-                }
-
-                fileName = reader.GetString(0);
-                contentType = reader.GetString(1);
-                stream = reader.GetStream(2);
+                await _fileRepository.AddFileAsync(file);
+                return Created($"api/File/download/{file.Id}", new { id = file.Id, filename = trustedFileNameForDisplay });
             }
             catch (Exception ex)
             {
@@ -207,8 +171,28 @@ namespace FileApi.Controllers
                 System.Diagnostics.Debug.WriteLine(ex);
                 return StatusCode(500, "An error occured. Please try again later");
             }
+        }
 
-            return File(stream, contentType, fileName);
+        [HttpGet]
+        [Route("download/{id}")]
+        public async Task<IActionResult> DownloadFile(int id)
+        {
+            try
+            {
+                var fileData = await _fileRepository.GetFileAsync(id);
+                Response.RegisterForDispose(fileData.dataStream);
+                return File(fileData.dataStream, fileData.contentType, fileData.fileName);
+            }
+            catch (FileNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                // Implement logging
+                System.Diagnostics.Debug.WriteLine(ex);
+                return StatusCode(500, "An error occured. Please try again later");
+            }
         }
     }
 }
