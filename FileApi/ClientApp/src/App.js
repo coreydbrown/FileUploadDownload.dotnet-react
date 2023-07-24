@@ -5,6 +5,7 @@ import ClipLoader from "react-spinners/ClipLoader";
 
 const App = () => {
     const [file, setFile] = useState(null);
+    const [note, setNote] = useState("");
     const [recentlyAddedFile, setRecentlyAddedFile] = useState(null);
     const [loading, setLoading] = useState(false);
     const [completedUpload, setCompletedUpload] = useState(false);
@@ -14,9 +15,14 @@ const App = () => {
         setFile(e.target.files[0]);
     }
 
+    const onNoteChange = e => {
+        setNote(e.target.value);
+    }
+
     const onFileUpload = async () => {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('note', note);
 
         setCompletedDownload(false);
         setLoading(true);
@@ -26,6 +32,7 @@ const App = () => {
         const filename = result.data.filename;
         setRecentlyAddedFile({ id, filename });
         setCompletedUpload(true);
+        setNote("");
     }
 
     const onFileDownload = async () => {
@@ -56,9 +63,15 @@ const App = () => {
         <div className="container">
             <h1>Upload/Download Files Using ASP.NET Core Web API - <span>Corey Brown</span></h1>
             <input type="file" onChange={onFileChange} />
-            <button onClick={onFileUpload}>Upload</button>
 
             <div style={{ margin: "1rem" }}>
+                <label for="note" style={{ marginRight: "0.5rem" }}>Add A Note (optional):</label>
+                <textarea id="note" name="note"  rows={3} value={note} onChange={onNoteChange} />
+            </div>
+
+            <button onClick={onFileUpload}>Upload</button>
+
+            <div style={{ margin: "4rem" }}>
                 <ClipLoader
                     loading={loading}
                     color="blue"
@@ -67,15 +80,15 @@ const App = () => {
             </div>
 
             {(completedUpload && !loading) &&
-                <div>
+                <div style={{margin: "4rem"} }>
                     <p><span>{recentlyAddedFile.filename}</span> has been successfully uploaded</p>
                     <button onClick={onFileDownload}>Download {recentlyAddedFile.name}</button>
                 </div>
             }
 
             {(completedDownload && !loading) &&
-                <div>
-                    <p><span>{recentlyAddedFile.name}</span> has been successfully downloaded</p>
+                <div style={{margin:"4rem"} }>
+                    <p>File has been successfully downloaded</p>
                 </div>
             }
         </div>

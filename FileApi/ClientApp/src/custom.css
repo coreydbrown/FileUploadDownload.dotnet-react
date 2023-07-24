@@ -32,5 +32,6 @@ h1 {
 
 button {
     border-color: green;
-    padding: 0.3rem;
+    padding: 0.5rem;
+    font-size: 1.1rem;
 }

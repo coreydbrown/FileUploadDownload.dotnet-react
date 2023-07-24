@@ -185,6 +185,8 @@ namespace FileApi.Controllers
             }
             catch (FileNotFoundException ex)
             {
+                // Implement logging
+                System.Diagnostics.Debug.WriteLine(ex);
                 return NotFound(ex.Message);
             }
             catch (Exception ex)

@@ -33,7 +33,7 @@ namespace FileApi.Utilities
                     }
                     // Check if the file extension is permitted
                     else if (!IsValidFileExtension(
-                        contentDisposition.FileName.Value, memoryStream,
+                        contentDisposition.FileName.Value,
                         prohibitedExtensions))
                     {
                         modelState.AddModelError("File",
@@ -49,15 +49,15 @@ namespace FileApi.Utilities
             {
                 // Implement logging
                 modelState.AddModelError("File",
-                    $"The upload failed. Error: {ex.HResult}");
+                $"The upload failed. Error: {ex.HResult}");
             }
 
             return Array.Empty<byte>();
         }
 
-        private static bool IsValidFileExtension(string fileName, Stream data, string[] prohibitedExtensions)
+        private static bool IsValidFileExtension(string fileName, string[] prohibitedExtensions)
         {
-            if (string.IsNullOrEmpty(fileName) || data == null || data.Length == 0)
+            if (string.IsNullOrEmpty(fileName))
             {
                 return false;
             }
