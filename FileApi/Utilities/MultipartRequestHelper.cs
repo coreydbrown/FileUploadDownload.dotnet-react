@@ -24,14 +24,16 @@ namespace FileApi.Utilities
 
         public static bool IsMultipartContentType(string contentType)
         {
-            return !string.IsNullOrEmpty(contentType)
-                   && contentType.IndexOf("multipart/", StringComparison.OrdinalIgnoreCase) >= 0;
+            return 
+                !string.IsNullOrEmpty(contentType)
+                && contentType.IndexOf("multipart/", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         public static bool HasFormDataContentDisposition(ContentDispositionHeaderValue contentDisposition)
         {
             // Content-Disposition: form-data; name="key";
-            return contentDisposition != null
+            return 
+                contentDisposition != null
                 && contentDisposition.DispositionType.Equals("form-data")
                 && string.IsNullOrEmpty(contentDisposition.FileName.Value)
                 && string.IsNullOrEmpty(contentDisposition.FileNameStar.Value);
@@ -40,7 +42,8 @@ namespace FileApi.Utilities
         public static bool HasFileContentDisposition(ContentDispositionHeaderValue contentDisposition)
         {
             // Content-Disposition: form-data; name="file"; filename="sample.txt"
-            return contentDisposition != null
+            return 
+                contentDisposition != null
                 && contentDisposition.DispositionType.Equals("form-data")
                 && (!string.IsNullOrEmpty(contentDisposition.FileName.Value)
                     || !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value));

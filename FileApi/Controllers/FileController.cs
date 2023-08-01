@@ -34,8 +34,7 @@ namespace FileApi.Controllers
         {
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
             {
-                ModelState.AddModelError("File", "The request couldn't be processed. The content-type must be multipart.");
-                return BadRequest(ModelState);
+                throw new BadHttpRequestException("The request couldn't be processed. The content-type must be multipart.");
             }
 
             var contentType = string.Empty;
@@ -56,45 +55,32 @@ namespace FileApi.Controllers
             while (section != null)
             {
                 var hasContentDispositionHeader =
-                    ContentDispositionHeaderValue.TryParse(
-                        section.ContentDisposition, out var contentDisposition);
+                    ContentDispositionHeaderValue.TryParse(section.ContentDisposition, out var contentDisposition);
 
                 if (hasContentDispositionHeader)
                 {
                     // executes if multipart section is a file
-                    if (MultipartRequestHelper
-                        .HasFileContentDisposition(contentDisposition))
+                    if (MultipartRequestHelper.HasFileContentDisposition(contentDisposition))
                     {
                         untrustedFileNameForStorage = contentDisposition.FileName.Value;
                         // The file name sent by the client is HTML-encoded for safe displaying/logging.
-                        trustedFileNameForDisplay = WebUtility.HtmlEncode(
-                                contentDisposition.FileName.Value);
+                        trustedFileNameForDisplay = WebUtility.HtmlEncode(contentDisposition.FileName.Value);
 
                         contentType = section.ContentType;
 
                         streamedFileContent =
                             await FileHelpers.ProcessStreamedFile(section, contentDisposition,
-                                ModelState, _prohibitedExtensions, _fileSizeLimit);
-
-                        if (!ModelState.IsValid)
-                        {
-                            return BadRequest(ModelState);
-                        }
+                                _prohibitedExtensions, _fileSizeLimit);
                     }
                     // executes if multipart section is form data
-                    else if (MultipartRequestHelper
-                        .HasFormDataContentDisposition(contentDisposition))
+                    else if (MultipartRequestHelper.HasFormDataContentDisposition(contentDisposition))
                     {
-                        var key = HeaderUtilities
-                            .RemoveQuotes(contentDisposition.Name).Value;
+                        var key = HeaderUtilities.RemoveQuotes(contentDisposition.Name).Value;
                         var encoding = FileHelpers.GetEncoding(section);
 
                         if (encoding == null)
                         {
-                            ModelState.AddModelError("File",
-                                "Failed to determine encoding for section content.");
-
-                            return BadRequest(ModelState);
+                            throw new BadHttpRequestException("Failed to determine encoding for section content.");
                         }
 
                         using (var streamReader = new StreamReader(
@@ -107,22 +93,16 @@ namespace FileApi.Controllers
                             // The value length limit is enforced by MultipartBodyLengthLimit
                             var value = await streamReader.ReadToEndAsync();
 
-                            if (string.Equals(value, "undefined",
-                                StringComparison.OrdinalIgnoreCase))
+                            if (string.Equals(value, "undefined", StringComparison.OrdinalIgnoreCase))
                             {
                                 value = string.Empty;
                             }
 
                             formAccumulator.Append(key, value);
 
-                            if (formAccumulator.ValueCount >
-                                _defaultFormOptions.ValueCountLimit)
+                            if (formAccumulator.ValueCount > _defaultFormOptions.ValueCountLimit)
                             {
-                                // Form key count limit of _defaultFormOptions.ValueCountLimit is exceeded.
-                                ModelState.AddModelError("File",
-                                    "The request contains too many form entries.");
-
-                                return BadRequest(ModelState);
+                                throw new BadHttpRequestException("The request contains too many form entries.");
                             }
                         }
                     }
@@ -142,10 +122,7 @@ namespace FileApi.Controllers
 
             if (!bindingSuccessful)
             {
-                ModelState.AddModelError("File",
-                    "Failed to bind form data to model.");
-
-                return BadRequest(ModelState);
+                throw new BadHttpRequestException("Failed to bind form data to model.");
             }
 
             // In production scenarios, an anti-virus/anti-malware scanner API should be used to scan file before making the file available for download or for use by other systems.
@@ -160,41 +137,17 @@ namespace FileApi.Controllers
                 UploadDt = DateTime.UtcNow
             };
 
-            try
-            {
-                await _fileRepository.AddFileAsync(file);
-                return Created($"api/File/download/{file.Id}", new { id = file.Id, filename = trustedFileNameForDisplay });
-            }
-            catch (Exception ex)
-            {
-                // Implement logging
-                System.Diagnostics.Debug.WriteLine(ex);
-                return StatusCode(500, "An error occured. Please try again later");
-            }
+            await _fileRepository.AddFileAsync(file);
+            return Created($"api/File/download/{file.Id}", new { id = file.Id, filename = trustedFileNameForDisplay });
         }
 
         [HttpGet]
         [Route("download/{id}")]
         public async Task<IActionResult> DownloadFile(int id)
         {
-            try
-            {
-                var fileData = await _fileRepository.GetFileAsync(id);
-                Response.RegisterForDispose(fileData.dataStream);
-                return File(fileData.dataStream, fileData.contentType, fileData.fileName);
-            }
-            catch (FileNotFoundException ex)
-            {
-                // Implement logging
-                System.Diagnostics.Debug.WriteLine(ex);
-                return NotFound(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                // Implement logging
-                System.Diagnostics.Debug.WriteLine(ex);
-                return StatusCode(500, "An error occured. Please try again later");
-            }
+            var fileData = await _fileRepository.GetFileAsync(id);
+            Response.RegisterForDispose(fileData.dataStream);
+            return File(fileData.dataStream, fileData.contentType, fileData.fileName);
         }
     }
 }

@@ -42,7 +42,7 @@ namespace FileApi.Services
 
             if (!await reader.ReadAsync())
             {
-                throw new FileNotFoundException($"File with ID: {id} could not be located");
+                throw new FileNotFoundException($"File with ID: {id} could not be found.");
             }
 
             fileName = reader.GetString(0);

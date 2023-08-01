@@ -11,48 +11,35 @@ namespace FileApi.Utilities
 
         public static async Task<byte[]> ProcessStreamedFile(
             MultipartSection section, ContentDispositionHeaderValue contentDisposition,
-            ModelStateDictionary modelState, string[] prohibitedExtensions, long sizeLimit)
+                string[] prohibitedExtensions, long sizeLimit)
         {
-            try
+            using (var memoryStream = new MemoryStream())
             {
-                using (var memoryStream = new MemoryStream())
-                {
-                    await section.Body.CopyToAsync(memoryStream);
+                await section.Body.CopyToAsync(memoryStream);
 
-                    // Check if the file is empty
-                    if (memoryStream.Length == 0)
-                    {
-                        modelState.AddModelError("File", "The file is empty.");
-                    }
-                    // Check if the file exceeds the size limit
-                    else if (memoryStream.Length > sizeLimit)
-                    {
-                        var megabyteSizeLimit = sizeLimit / 1048576;
-                        modelState.AddModelError("File",
-                        $"The file exceeds {megabyteSizeLimit:N1} MB.");
-                    }
-                    // Check if the file extension is permitted
-                    else if (!IsValidFileExtension(
-                        contentDisposition.FileName.Value,
-                        prohibitedExtensions))
-                    {
-                        modelState.AddModelError("File",
-                            "The file type isn't permitted");
-                    }
-                    else
-                    {
-                        return memoryStream.ToArray();
-                    }
+                // Check if the file is empty
+                if (memoryStream.Length == 0)
+                {
+                    throw new BadHttpRequestException("The file is empty. Please upload a non-empty file.");
+                }
+                // Check if the file exceeds the size limit
+                else if (memoryStream.Length > sizeLimit)
+                {
+                    var megabyteSizeLimit = sizeLimit / 1048576;
+                    throw new BadHttpRequestException($"The file exceeds {megabyteSizeLimit:N1} MB.");
+                }
+                // Check if the file extension is permitted
+                else if (!IsValidFileExtension(
+                    contentDisposition.FileName.Value,
+                    prohibitedExtensions))
+                {
+                    throw new BadHttpRequestException("The file type isn't permitted");
+                }
+                else
+                {
+                    return memoryStream.ToArray();
                 }
             }
-            catch (Exception ex)
-            {
-                // Implement logging
-                modelState.AddModelError("File",
-                $"The upload failed. Error: {ex.HResult}");
-            }
-
-            return Array.Empty<byte>();
         }
 
         private static bool IsValidFileExtension(string fileName, string[] prohibitedExtensions)
