@@ -2,8 +2,13 @@ using FileApi.Data;
 using FileApi.Middleware;
 using FileApi.Services;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((ctx, lc) => lc
+    .WriteTo.Console()
+    .ReadFrom.Configuration(ctx.Configuration));
 
 // Overwrite Kestrel max request body size to be unlimited.
 builder.WebHost.ConfigureKestrel(serverOptions =>

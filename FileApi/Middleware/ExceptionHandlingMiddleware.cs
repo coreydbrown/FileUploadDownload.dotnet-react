@@ -6,10 +6,12 @@ namespace FileApi.Middleware
     public class ExceptionHandlingMiddleware
     {
         private readonly RequestDelegate _next;
+        private readonly ILogger<ExceptionHandlingMiddleware> _logger;
 
-        public ExceptionHandlingMiddleware(RequestDelegate next)
+        public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
         {
             this._next = next;
+            this._logger = logger;
         }
 
         public async Task InvokeAsync(HttpContext httpContext)
@@ -20,6 +22,7 @@ namespace FileApi.Middleware
             }
             catch (Exception ex) 
             {
+                _logger.LogError(ex, "Error occured");
                 await handleExceptionAsync(httpContext, ex);
             }     
         }

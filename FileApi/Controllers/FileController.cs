@@ -33,7 +33,7 @@ namespace FileApi.Controllers
         public async Task<IActionResult> Upload()
         {
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
-            {
+            { 
                 throw new BadHttpRequestException("The request couldn't be processed. The content-type must be multipart.");
             }
 
@@ -48,7 +48,7 @@ namespace FileApi.Controllers
             var boundary = MultipartRequestHelper.GetBoundary(
                 MediaTypeHeaderValue.Parse(Request.ContentType),
                 _defaultFormOptions.MultipartBoundaryLengthLimit);
-            var reader = new MultipartReader(boundary, HttpContext.Request.Body);
+            var reader = new MultipartReader(boundary, Request.Body);
 
             var section = await reader.ReadNextSectionAsync();
 
@@ -86,9 +86,7 @@ namespace FileApi.Controllers
                         using (var streamReader = new StreamReader(
                             section.Body,
                             encoding,
-                            detectEncodingFromByteOrderMarks: true,
-                            bufferSize: 1024,
-                            leaveOpen: true))
+                            detectEncodingFromByteOrderMarks: true))
                         {
                             // The value length limit is enforced by MultipartBodyLengthLimit
                             var value = await streamReader.ReadToEndAsync();
